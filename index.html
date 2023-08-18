@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Websockets</title>
+  </head>
+  <body>
+    <div>Connected</div>
+
+    <input type="text" id="inputt" onch />
+    <button id="send">Send</button>
+    <div id="typingText"></div>
+    <textarea cols="30" rows="10" id="textarea"></textarea>
+
+    <script>
+      const name = prompt("Your Name");
+      const socket = new WebSocket("ws://127.0.0.1:3000");
+      console.log(socket);
+
+      socket.addEventListener("open", (event) => {
+        // socket.send("Hello Server!");
+        console.log("CONNECTED");
+        socket.send(JSON.stringify({ id: name }));
+      });
+
+      const typingText = document.getElementById("typingText");
+
+      const typers = [];
+      socket.addEventListener("message", (event) => {
+        // socket.send("Hello Server!");
+        const parsed = JSON.parse(event.data);
+        console.log(parsed);
+        if (typers.includes(parsed.name)) {
+          return;
+        }
+        typers.push(parsed.name);
+        const message = `${parsed.name} is Typing\n`;
+
+        typingText.innerText += message;
+        setTimeout(() => {
+          typers.splice(parsed.name);
+          typingText.innerText = typingText.innerText.replace(message, "");
+        }, 1000);
+        // input.value = event.data;
+        // textArea.value = event.data;
+      });
+
+      const emitTyping = () => {
+        socket.send(JSON.stringify({ name, isTyping: true }));
+      };
+
+      const emitTypingDebounced = debounce(() => emitTyping());
+
+      let input = document.getElementById("inputt");
+      input.addEventListener("keydown", (event) => {
+        emitTypingDebounced();
+      });
+      let sendButton = document.getElementById("send");
+      let textArea = document.getElementById("textarea");
+      function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            console.log("cud");
+            func();
+          }, timeout);
+        };
+      }
+
+      textArea.addEventListener("keydown", (event) => {
+        console.log(event);
+        let string = textArea.value;
+        if (event.keyCode >= 65 && event.keyCode <= 90) string += event.key;
+        socket.send(JSON.stringify({ message: string }));
+      });
+
+      // Temp
+      //   sendButton.addEventListener("click", () => {
+      //     socket.send(JSON.stringify({ message: input.value }));
+      //   });
+    </script>
+  </body>
+</html>
